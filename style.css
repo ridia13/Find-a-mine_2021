@@ -1,0 +1,9 @@
+table{
+  width: 100%;
+  height: 350px;
+}
+td{
+  width: 20px;
+  height: 20px;
+  background-color: plum;
+}
