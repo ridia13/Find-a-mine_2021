@@ -6,7 +6,7 @@ const MINE = 10;
 const $tbody = document.querySelector('#table tbody');
 const CODE = {
   MINE: -1,
-  NORMAL: -2,
+  NORMAL: -2, //닫힌 칸
   FLAG: -3,
   FLAG_MINE: -4,
   QUESTION: -5,
@@ -58,6 +58,28 @@ function drawTable() {
     })
   })
   
+  $tbody.addEventListener('contextmenu', onRightClick);//버블링
+}
+
+function onRightClick(e){
+  e.preventDefault();
+  const target = e.target;
+  const rowIndex = target.parentNode.rowIndex;
+  const cellIndex = target.cellIndex;
+  const cellData = data[rowIndex][cellIndex];
+  if(cellData === CODE.NORMAL || cellData === CODE.MINE){//닫힌 칸이면
+    data[rowIndex][cellIndex] = cellData === CODE.MINE? CODE.QUESTION_MINE : CODE.QUESTION;//물음표로
+    target.className = 'question';
+    target.textContent = '❔';
+  }else if(cellData === CODE.QUESTION || cellData === CODE.QUESTION_MINE){//물음표이면
+    data[rowIndex][cellIndex] = cellData === CODE.QUESTION_MINE? CODE.FLAG_MINE : CODE.FLAG;//깃발로
+    target.className = 'flag';
+    target.textContent = '🚩';
+  }else if(cellData === CODE.FLAG || cellData === CODE.FLAG_MINE){//깃발이면
+    data[rowIndex][cellIndex] = cellData === CODE.FLAG_MINE? CODE.MINE : CODE.NORMAL;//닫힌 칸으로
+    target.className = '';
+    target.textContent = '';
+  }
 }
 
 function init() {

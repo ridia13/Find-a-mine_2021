@@ -3,7 +3,8 @@ table{
   height: 350px;
 }
 td{
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   background-color: plum;
+  text-align: center;
 }
