@@ -5,6 +5,11 @@ table{
 td{
   width: 30px;
   height: 30px;
-  background-color: plum;
+  background-color: powderblue;
   text-align: center;
+}
+
+.opened{
+  background-color: steelblue;
+  color: #fff;
 }
