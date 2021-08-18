@@ -100,26 +100,39 @@ function countMine(rowIndex, cellIndex) {
   return count;
 }
 
-function aroundTarget(rowIndex, cellIndex) {
-
-  // 주변 8칸 지뢰개수 표시
-  for (let i = 1; i > -2; i--) {
-    for (let j = 1; j > -2; j--) {
-      //1, 0, -1
-      let count = 0;
-      let target = $tbody.childNodes[rowIndex + i].childNodes[cellIndex + j];
-      count = data[rowIndex + i]?.[cellIndex + j] && countMine(rowIndex + i, cellIndex + j);
-      data[rowIndex + i][cellIndex + j] = count;
-      target.textContent = count || '';
-      target.className = 'opened';
-      if (count === 0) { // 주변 8칸 중 빈칸이 있을 경우 
-        console.log(rowIndex + i, cellIndex + j);
-      }
-    }
+function open(rowIndex, cellIndex) {
+  const target = $tbody.children[rowIndex]?.cells[cellIndex];
+  if (!target) { //target 칸 없을 경우
+    return;
   }
-
-  // 주변 8칸 지뢰개수 표시
+  const count = $tbody.children[rowIndex] ?.cells[cellIndex] && countMine(rowIndex, cellIndex);
+  data[rowIndex][cellIndex] = count;
+  target.textContent = count || '';
+  target.className = 'opened';
+  return count;
 }
+
+function openAround(rI, cI) { //target 주변 칸이 있는가
+  setTimeout(() => {
+    const count = open(rI, cI); //주변 지뢰o 경우
+    if (count === 0) { //주변 지뢰x 경우
+      //주변 칸 같이 열수 o 연다
+      openAround(rI - 1, cI - 1);
+      openAround(rI - 1, cI);
+      openAround(rI - 1, cI + 1);
+      openAround(rI, cI - 1);
+      openAround(rI, cI + 1);
+      openAround(rI + 1, cI - 1);
+      openAround(rI + 1, cI);
+      openAround(rI + 1, cI + 1);
+    }
+  }, 0);
+  //지뢰 x 칸인가?
+  // y -> 해당 칸 기준 aroundTarget
+  // n -> 무시
+}
+
+
 
 function onLeftClick(e) {
   e.preventDefault();
@@ -128,21 +141,13 @@ function onLeftClick(e) {
   const cellIndex = target.cellIndex;
   const cellData = data[rowIndex][cellIndex];
   if (cellData === CODE.NORMAL) { //닫힌 칸이면 
-    const count = countMine(rowIndex, cellIndex);
-    if (count === 0) { //주변 지뢰x 경우
-      //주변 칸 같이 열수 o 연다
-      aroundTarget(rowIndex, cellIndex);
-    } else if (count) { //주변 지뢰o 경우
-    }
-    data[rowIndex][cellIndex] = count;
-    target.textContent = count || '';
-    target.className = 'opened';
+    openAround(rowIndex, cellIndex);
     //모든 칸 열렸나?    
   } else if (cellData === CODE.MINE) { //지뢰 칸이면
     target.textContent = '💣';
     target.className = 'opened';
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
-   $tbody.removeEventListener('click', onLeftClick); //버블링
+    $tbody.removeEventListener('click', onLeftClick); //버블링
   } // 깃발,물을표 무시
 
 }
