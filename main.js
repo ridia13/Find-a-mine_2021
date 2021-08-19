@@ -1,5 +1,6 @@
 'use strict';
 
+const $time = document.querySelector('#js-time');
 const ROW = 10;
 const CELL = 10;
 const MINE = 10;
@@ -11,9 +12,15 @@ const CODE = {
   FLAG_MINE: -4,
   QUESTION: -5,
   QUESTION_MINE: -6,
-  OPENED: 0, // 0이상이면 다모두 열린 칸
+  OPENED: 0, // 0~8 열린 칸
 }
 let data = [];
+let openCount = 0;
+const startTime = new Date();
+const interval = setInterval(() => {
+  const time = Math.floor(((new Date() - startTime) / 1000));
+  $time.textContent = `Timer: ${time}s`;
+}, 1000);
 
 function plantMine() {
   const candidate = Array(ROW * CELL).fill().map((value, index) => {
@@ -53,11 +60,11 @@ function drawTable() {
       const $td = document.createElement('td');
       $tr.append($td);
       if (cell === CODE.MINE) {
-        $td.textContent = 'X'; //개발 편의를 위해(지뢰 위치)
+        // $td.textContent = 'X'; //개발 편의를 위해(지뢰 위치)
       }
     })
   })
-
+  
   $tbody.addEventListener('contextmenu', onRightClick); //버블링
   $tbody.addEventListener('click', onLeftClick); //버블링
 }
@@ -102,13 +109,27 @@ function countMine(rowIndex, cellIndex) {
 
 function open(rowIndex, cellIndex) {
   const target = $tbody.children[rowIndex]?.cells[cellIndex];
-  if (!target) { //target 칸 없을 경우
-    return;
-  }
+  if (!target)return;//target 칸 없을 경우
+  if(data[rowIndex][cellIndex] >= CODE.OPENED)return;//이미 열린 칸일 경우
+  
+  openCount++;
+  console.log(openCount);
+
   const count = $tbody.children[rowIndex] ?.cells[cellIndex] && countMine(rowIndex, cellIndex);
   data[rowIndex][cellIndex] = count;
   target.textContent = count || '';
   target.className = 'opened';
+
+  if(openCount === ROW*CELL - MINE){//모든칸 열었나?
+    const endTime = new Date();
+    const time = Math.floor((endTime - startTime) /1000);
+    clearInterval(interval);
+    $tbody.removeEventListener('contextmenu', onRightClick); //버블링
+    $tbody.removeEventListener('click', onLeftClick); //버블링
+    setTimeout(() => {//이겼다고 표시
+      alert(`You win!🎉 It took ${time} seconds.`);
+    }, 500);
+  };
   return count;
 }
 
@@ -116,7 +137,7 @@ function openAround(rI, cI) { //target 주변 칸이 있는가
   setTimeout(() => {
     const count = open(rI, cI); //주변 지뢰o 경우
     if (count === 0) { //주변 지뢰x 경우
-      //주변 칸 같이 열수 o 연다
+      //주변 칸 같이 열수 o 연다(해당 칸 기준 aroundTarget)
       openAround(rI - 1, cI - 1);
       openAround(rI - 1, cI);
       openAround(rI - 1, cI + 1);
@@ -127,12 +148,7 @@ function openAround(rI, cI) { //target 주변 칸이 있는가
       openAround(rI + 1, cI + 1);
     }
   }, 0);
-  //지뢰 x 칸인가?
-  // y -> 해당 칸 기준 aroundTarget
-  // n -> 무시
 }
-
-
 
 function onLeftClick(e) {
   e.preventDefault();
@@ -142,12 +158,12 @@ function onLeftClick(e) {
   const cellData = data[rowIndex][cellIndex];
   if (cellData === CODE.NORMAL) { //닫힌 칸이면 
     openAround(rowIndex, cellIndex);
-    //모든 칸 열렸나?    
   } else if (cellData === CODE.MINE) { //지뢰 칸이면
     target.textContent = '💣';
     target.className = 'opened';
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
     $tbody.removeEventListener('click', onLeftClick); //버블링
+    clearInterval(interval);
   } // 깃발,물을표 무시
 
 }
