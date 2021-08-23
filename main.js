@@ -1,10 +1,15 @@
 'use strict';
 
-const $time = document.querySelector('#js-time');
-const ROW = 10;
-const CELL = 10;
-const MINE = 10;
+const $form = document.querySelector('#js-form'),
+  $row = $form.querySelector('#js-row'),
+  $cell = $form.querySelector('#js-cell'),
+  $mine = $form.querySelector('#js-mine');
+const $msg = document.querySelector('#js-msg');
 const $tbody = document.querySelector('#table tbody');
+const $time = document.querySelector('#js-time');
+let ROW = 0;
+let CELL = 0;
+let MINE = 0;
 const CODE = {
   MINE: -1,
   NORMAL: -2, //닫힌 칸
@@ -16,11 +21,45 @@ const CODE = {
 }
 let data = [];
 let openCount = 0;
-const startTime = new Date();
-const interval = setInterval(() => {
-  const time = Math.floor(((new Date() - startTime) / 1000));
-  $time.textContent = `Timer: ${time}s`;
-}, 1000);
+let startTime;
+let interval;
+
+function onSubmit(e){
+  e.preventDefault();
+  const rowNum = $row.value; 
+  const cellNum = $cell.value; 
+  const mineNum = $mine.value; 
+  // 값이 0보다 작같이나 값이 없나?
+  // 경고 msg + return
+  // 각각 값 저장
+  if(rowNum <= 0 || rowNum === undefined || cellNum <= 0 || cellNum === undefined){
+    $msg.textContent = '값입력해';
+    return;
+  }else{
+    ROW = rowNum;
+    CELL = cellNum;
+    console.log(ROW);
+    console.log(CELL);
+  }
+  // 숫자가 0보다 작같거나 값이 없거나 row*cell 개수보다 많은가?
+  // 경고 msg + return
+  // 값을 mine에 입력 후 화면 전환
+  if(mineNum <= 0 || mineNum === undefined || mineNum > ROW*CELL){
+    $msg.textContent = '경고';
+    return;
+  }else{
+    MINE = mineNum;
+    console.log(MINE);
+    $msg.style.display = 'none';
+    startTime = new Date();
+    interval = setInterval(() => {//타이머
+      const time = Math.floor(((new Date() - startTime) / 1000));
+      $time.textContent = `Timer: ${time}s`;
+    }, 1000);
+    $tbody.innerHTML = '';
+    drawTable();
+  }
+}
 
 function plantMine() {
   const candidate = Array(ROW * CELL).fill().map((value, index) => {
@@ -51,6 +90,7 @@ function plantMine() {
   return data;
 }
 
+const dev = true;//개발 편의를 위해(지뢰 위치)
 function drawTable() {
   data = plantMine();
   data.forEach((row, i, arr) => {
@@ -60,7 +100,7 @@ function drawTable() {
       const $td = document.createElement('td');
       $tr.append($td);
       if (cell === CODE.MINE) {
-        // $td.textContent = 'X'; //개발 편의를 위해(지뢰 위치)
+        dev && ($td.textContent = 'X'); 
       }
     })
   })
@@ -121,14 +161,16 @@ function open(rowIndex, cellIndex) {
   target.className = 'opened';
 
   if(openCount === ROW*CELL - MINE){//모든칸 열었나?
+    console.log('open');
     const endTime = new Date();
     const time = Math.floor((endTime - startTime) /1000);
+    openCount = 0;
     clearInterval(interval);
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
     $tbody.removeEventListener('click', onLeftClick); //버블링
     setTimeout(() => {//이겼다고 표시
       alert(`You win!🎉 It took ${time} seconds.`);
-    }, 500);
+    }, 100);
   };
   return count;
 }
@@ -161,14 +203,23 @@ function onLeftClick(e) {
   } else if (cellData === CODE.MINE) { //지뢰 칸이면
     target.textContent = '💣';
     target.className = 'opened';
+    openCount = 0;
+    clearInterval(interval);
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
     $tbody.removeEventListener('click', onLeftClick); //버블링
-    clearInterval(interval);
   } // 깃발,물을표 무시
 
 }
 
 function init() {
-  drawTable();
+  $form.addEventListener('submit', onSubmit);
 }
 init();
+
+// 첫 클릭 시 지뢰 피하기
+
+// 처음 클릭인가
+// y 클릭한 자리가 지뢰인가
+  // y 주변 지뢰가 아닌 자리로 옮긴다
+  // n 대기
+// n return
