@@ -26,7 +26,7 @@ let interval;
 let firstClick = true;
 let searched;
 let foundNormal = false;
-const dev = true;//개발 편의를 위해(지뢰 위치)
+const dev = false;//개발 편의를 위해(지뢰 위치)
 
 function onSubmit(e){
   e.preventDefault();
@@ -248,8 +248,17 @@ function onLeftClick(e) {
     foundNormal = false;
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
     $tbody.removeEventListener('click', onLeftClick); //버블링
-    console.log(interval);
     clearInterval(interval);
+    data.forEach((row,rI,arr) => {//모든 지뢰 보여주기
+      row.forEach((v,cI,arr) => {
+        if(v === CODE.MINE){
+          const target = $tbody.rows[rI].cells[cI];
+          console.log(target);
+          target.textContent = '💣';
+          target.className = 'opened';
+        }
+      })
+    })
   } // 깃발,물을표 무시
 }
 
@@ -257,5 +266,3 @@ function init() {
   $form.addEventListener('submit', onSubmit);
 }
 init();
-
-
