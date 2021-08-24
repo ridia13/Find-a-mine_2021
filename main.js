@@ -23,6 +23,10 @@ let data = [];
 let openCount = 0;
 let startTime;
 let interval;
+let firstClick = true;
+let searched;
+let foundNormal = false;
+const dev = true;//개발 편의를 위해(지뢰 위치)
 
 function onSubmit(e){
   e.preventDefault();
@@ -36,10 +40,8 @@ function onSubmit(e){
     $msg.textContent = '값입력해';
     return;
   }else{
-    ROW = rowNum;
-    CELL = cellNum;
-    console.log(ROW);
-    console.log(CELL);
+    ROW = parseInt(rowNum);
+    CELL = parseInt(cellNum);
   }
   // 숫자가 0보다 작같거나 값이 없거나 row*cell 개수보다 많은가?
   // 경고 msg + return
@@ -48,16 +50,19 @@ function onSubmit(e){
     $msg.textContent = '경고';
     return;
   }else{
-    MINE = mineNum;
-    console.log(MINE);
+    MINE = parseInt(mineNum);
     $msg.style.display = 'none';
     startTime = new Date();
     interval = setInterval(() => {//타이머
       const time = Math.floor(((new Date() - startTime) / 1000));
       $time.textContent = `Timer: ${time}s`;
     }, 1000);
+    openCount = 0;
+    firstClick = true;
+    foundNormal = false;
     $tbody.innerHTML = '';
     drawTable();
+    console.log(`opencount: ${openCount}`);
   }
 }
 
@@ -90,7 +95,6 @@ function plantMine() {
   return data;
 }
 
-const dev = true;//개발 편의를 위해(지뢰 위치)
 function drawTable() {
   data = plantMine();
   data.forEach((row, i, arr) => {
@@ -154,18 +158,17 @@ function open(rowIndex, cellIndex) {
   
   openCount++;
   console.log(openCount);
-
   const count = $tbody.children[rowIndex] ?.cells[cellIndex] && countMine(rowIndex, cellIndex);
   data[rowIndex][cellIndex] = count;
   target.textContent = count || '';
   target.className = 'opened';
-
+  
   if(openCount === ROW*CELL - MINE){//모든칸 열었나?
     console.log('open');
     const endTime = new Date();
     const time = Math.floor((endTime - startTime) /1000);
-    openCount = 0;
     clearInterval(interval);
+    openCount = 0;
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
     $tbody.removeEventListener('click', onLeftClick); //버블링
     setTimeout(() => {//이겼다고 표시
@@ -192,23 +195,62 @@ function openAround(rI, cI) { //target 주변 칸이 있는가
   }, 0);
 }
 
+function checkMine(rI, cI){
+  if(foundNormal)return;//빈칸을 찾았나
+  if(rI < 0 || rI >= ROW || cI < 0 || cI >= CELL)return;// 존재하는 칸이 아닌가
+  if(searched[rI][cI])return;// 이미 검색한 칸인가
+  // 빈칸이라면
+  searched[rI][cI] = true;
+  if(data[rI][cI] === CODE.NORMAL){
+    // 지뢰 옮기기
+    foundNormal = true;
+    data[rI][cI] = CODE.MINE;
+    console.log(`moveMine: ${rI}${cI}`);
+  }else if(data[rI][cI] === CODE.MINE){// 지뢰칸이라면
+    // 8칸 확인
+    checkMine(rI-1,cI-1);
+    checkMine(rI-1,cI);
+    checkMine(rI-1,cI+1);
+    checkMine(rI,cI-1);
+    checkMine(rI,cI+1);
+    checkMine(rI+1,cI-1);
+    checkMine(rI+1,cI);
+    checkMine(rI+1,cI+1);
+  }
+  
+  
+}
+
 function onLeftClick(e) {
   e.preventDefault();
   const target = e.target;
   const rowIndex = target.parentNode.rowIndex;
   const cellIndex = target.cellIndex;
-  const cellData = data[rowIndex][cellIndex];
+  let cellData = data[rowIndex][cellIndex];
+
+  if(firstClick){// 첫번째 클릭인가
+    firstClick = false;
+    searched = Array(ROW).fill().map(() => []);
+    if(cellData === CODE.MINE){//첫클릭이 지뢰인가
+      checkMine(rowIndex, cellIndex);//지뢰 옮기기
+      data[rowIndex][cellIndex] = CODE.NORMAL;//nomal로 변환
+      cellData = CODE.NORMAL;
+    }
+  }
   if (cellData === CODE.NORMAL) { //닫힌 칸이면 
     openAround(rowIndex, cellIndex);
   } else if (cellData === CODE.MINE) { //지뢰 칸이면
+    console.log(`cell: ${cellData}`);
     target.textContent = '💣';
     target.className = 'opened';
     openCount = 0;
-    clearInterval(interval);
+    firstClick = true;
+    foundNormal = false;
     $tbody.removeEventListener('contextmenu', onRightClick); //버블링
     $tbody.removeEventListener('click', onLeftClick); //버블링
+    console.log(interval);
+    clearInterval(interval);
   } // 깃발,물을표 무시
-
 }
 
 function init() {
@@ -216,10 +258,4 @@ function init() {
 }
 init();
 
-// 첫 클릭 시 지뢰 피하기
 
-// 처음 클릭인가
-// y 클릭한 자리가 지뢰인가
-  // y 주변 지뢰가 아닌 자리로 옮긴다
-  // n 대기
-// n return
